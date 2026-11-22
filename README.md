@@ -6,4 +6,5 @@ The first thing i did is creating an account in GitHub to track my progress
 - [x] Created GitHub account and repository
 - [ ] Project 1: Build the lab (Kali + Ubuntu Server)
 - [ ] Project 2: Read the wire (Wireshark)
-- [ ] Project 3: Python security tools 
+- [ ] Project 3: Python security tools
+So fare,  
