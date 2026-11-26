@@ -74,3 +74,54 @@ After about 45 minutes the VM window went black and did not react to keys. Virtu
 - One package, (kali-desktop-gnome), failed because (gst-video-thumbnailer) had never been installed. I fixed that with (sudo --fix-broken install), which installed 3 small packages and removed nothing. Then (sudo apt full-upgrade) finished the remaining packages.
 - Final check: (sudo dpkg --audit) printed nothing, then I rebooted into the new kernel.
 Lesson: apt and dpkg can resume after interruptions. Fix with (dpkg --configure -a), then (apt --fix-broken install), then (apt full-upgrade). 
+
+8. A leftover warning from deleting the swap partition:
+   Every time the boot image was rebuilt I saw (cryptsetup: ERROR: Couldn't resolve device UUID=...) and (no matching swap device is available).
+   - Cause: The file (/etc/initramfs-tools/conf.d/resume) still pointed to the swap partition I deleted.
+   - Fix:
+   echo "RESUME=none" | sudo tee /etc/initramfs-tools/conf.d/resume
+sudo update-initramfs -u
+My first attempt wrote to wrong place (/etc/initramfs-tools/conf), so I found the stray file with (grep -rn RESUME /etc/initramfs-tools/) and removed it with (sudo rm). After the correct fix the warnings were gone.
+
+9. The fourth problem: Kali lost its internet (eth0).
+After the upgrade, "ip a" showed "eth0" with no IP address, and "ping google.com" failed with "Temporary failure in name resolution".
+- "nmcli device status" showed "eth0" as disconnected with on connection profile.
+- The only profile, "Wired connection 1", belonged to "eth1".
+- Fix: I created a profile for "eth0". NetworkManager uses automatic DHCP (the router-style service that hands out IP addresses) by default.
+sudo nmcli connection add type ethernet ifname eth0 con-name nat-eth0
+sudo nmcli connection up nat-eth0
+"eth0" got "IP address" again and the ping worked.
+
+10. Adding the privet lab network:
+In VirtualBox (Settings > Expert > Network > Adapter 2) I enabled a second card set to Host-only Adapter. The Basic view only showed NAT and Bridged, so I switched to Expert mode. Kali now has:
+- "eht0" on NAT (IP address) for internet and updates.
+- "eth1" no host-only (IP address) for the lab network.
+Before practicing attacks later I will untick Enable Network Adapter on Adapter 1, so the lab has no internet path.
+
+Mini glossary (so I remember later) 
+- VM: a computer running inside my computer as a window.
+- NAT: the VM shares my laptop's internet but cannot be reached from outside.
+- Host-only: a private network shared only by my laptop and my VMs.
+- Partition/filesystem: a section of the disk, and the structure inside it that stores files. Both must be resized.
+- Swap: disk space used as emergency memory when RAM is full.
+- Mirror: one of many servers that host Kali's software downloads.
+- apt / dpkg: the tools that download and install software. "apt" fetches, "dpkg" installs.
+- Snapshot: a save point for a VM, so I can roll back after a mistake.
+- systemd: the service manager that starts and tracks background services.
+- sudo: run one command as administrator.
+
+What I learned:
+1. Check free disk space before a big upgrade (df -h /)
+2. Read the logs. The slow mirror's name was visible the whole time.
+3. Take a snapshot before risky changes, and keep backups of config files (.bak).
+4. Troubleshoot one thing at a time, and write down the exact error text.
+5. Typos are normal. Compare what I typed with what I was given, character by character.
+
+##Progress
+- [x] Create GitHub account and repository.
+- [x] Kali VM running and fully upgraded
+- [x] Virtual disk resized to 60 GB, swap rebuilt
+- [x] Take snapshot "Kali-upgraded-clean"
+- [] Create Ubuntu Server VM (the target)
+- [] Ping test between Kali and Ubuntu over host-only network
+- [] Add a network diagram and the lab IP addresses to this repo 
